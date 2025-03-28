@@ -145,6 +145,10 @@ ok: [10.0.2.220] => {
 ![res](./images/res2.png)
 ![res](./images/res3.png)
 ![res](./images/res4.png)
+
+### tags
+![tag1](./images/tag1.png)
+![tag2](./images/tag2.png)
 ---
 
 ## Notes
