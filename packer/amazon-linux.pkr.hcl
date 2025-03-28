@@ -53,7 +53,7 @@ source "amazon-ebs" "example" {
     volume_size = 10
   }
 
-  terminate_instance = false
+  # terminate_instance = false
 }
 
 # 定义 build 过程
