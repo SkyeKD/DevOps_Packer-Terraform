@@ -7,7 +7,7 @@ packer {
   }
 }
 
-# 声明变量
+
 variable "aws_region" {
   type    = string
   default = "us-west-2"
@@ -23,12 +23,12 @@ variable "ssh_public_key" {
   default = "/Users/daikexin/.ssh/id_rsa.pub"
 }
 
-# 使用 locals 定义 timestamp 变量
+
 locals {
   ami_name = "custom-amazon-linux-ami-${replace(timestamp(), ":", "-")}"
 }
 
-# 定义 Amazon EBS 构建源
+
 source "amazon-ebs" "example" {
   region        = var.aws_region
   instance_type = "t2.micro"
@@ -36,27 +36,26 @@ source "amazon-ebs" "example" {
   ami_name      = local.ami_name
   ami_description = "Amazon Linux AMI with Docker installed"
 
-  # source_ami_filter 自动获取最新的 Amazon Linux 2 AMI
+
   source_ami_filter {
     filters = {
       name                = "amzn2-ami-hvm-*-x86_64-gp2"
       root-device-type    = "ebs"
       virtualization-type = "hvm"
     }
-    owners      = ["137112412989"]  # Amazon 官方账户 ID
+    owners      = ["137112412989"] 
     most_recent = true
   }
 
-  # 添加 SSH 密钥
+
   launch_block_device_mappings {
     device_name = "/dev/xvda"
     volume_size = 10
   }
 
-  terminate_instance = false
+  # terminate_instance = false
 }
 
-# 定义 build 过程
 build {
   sources = ["source.amazon-ebs.example"]
 
