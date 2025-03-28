@@ -1,0 +1,53 @@
+---
+- name: Configure EC2 instances
+  hosts: all
+  become: yes  
+  tasks:
+
+    - name: Update package cache and upgrade packages (Ubuntu)
+      apt:
+        update_cache: yes
+        upgrade: dist
+      when: ansible_facts['os_family'] == "Debian"
+
+    - name: Update package cache and upgrade packages (Amazon Linux)
+      yum:
+        name: "*"
+        state: latest
+      when: ansible_facts['os_family'] == "RedHat"
+
+    - name: Install Docker if not present (Ubuntu)
+      apt:
+        name: docker.io
+        state: latest
+      when: ansible_facts['os_family'] == "Debian"
+
+    - name: Install Docker if not present (Amazon Linux)
+      yum:
+        name: docker
+        state: latest
+      when: ansible_facts['os_family'] == "RedHat"
+
+    - name: Ensure Docker service is running
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Report Docker version
+      command: docker --version
+      register: docker_version_output
+      changed_when: false
+
+    - name: Show Docker version
+      debug:
+        var: docker_version_output.stdout
+
+    - name: Show disk usage
+      command: df -h
+      register: disk_usage_output
+      changed_when: false
+
+    - name: Print disk usage
+      debug:
+        var: disk_usage_output.stdout

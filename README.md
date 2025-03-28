@@ -1,124 +1,160 @@
-# AWS Infrastructure Automation with Packer and Terraform
+# Assignment #10 - Multi-OS EC2 Configuration with Ansible
 
-This project automates the creation and deployment of infrastructure on AWS using **Packer** and **Terraform**. It covers the following tasks:
+## Requirement
+Requirements: (use the same terraform repo and create a new assignment10 branch)
 
-## Project Requirements
+Update your previous Terraform assignment to provision 6 EC2: 3 Ubuntu and 3 Amazon Linux. Tag them with (OS: ubuntu or OS:amazon). 1 more EC2 instance to host the Ansible Controller
+Create an Ansible Playbook for the 6 EC2 instance
+Target the 6 ec2 instances and perform the following:
+Update and upgrade the packages (if needed)
+Verify we are running the latest docker
+Report the disk usage for each ec2 instance
+Update your repo with a new branch and update the README file for me to follow the instructions so I can run the terraform provisioning and the ansible playbook.
 
-### A. Custom AWS AMI creation using Packer
-- **Base AMI**: Amazon Linux 2
-- **Installed Software**: Docker
-- **SSH Access**: Configured with your SSH public key for authentication
+## Overview
+This project provisions a multi-OS EC2 environment using Terraform and configures the instances using Ansible. It includes:
 
-### B. Terraform scripts provisioning AWS resources
-- **VPC** with proper CIDR configuration
-- **Public and Private Subnets** with appropriate route tables
-- **Bastion Host** in the public subnet with SSH (port 22) access limited to your IP
-- **6 EC2 instances** in a private subnet, based on the custom AMI created by Packer
+- A VPC with public and private subnets
+- NAT Gateway to allow private instances to access the internet
+- 3 Ubuntu EC2 instances (in private subnet)
+- 3 Amazon Linux EC2 instances (in private subnet)
+- 1 Ansible Controller EC2 instance (in public subnet)
+- Ansible Playbook to:
+  - Update/upgrade packages
+  - Ensure latest Docker is installed
+  - Print disk usage
 
-## Repository Structure
+---
 
-```bash
-project-root/
+## Repo Structure
+```
+.
+├── ansible
+│   ├── inventory.ini
+│   └── site.yml
+├── images
+│   └── (place screenshots here)
 ├── packer
 │   └── amazon-linux.pkr.hcl
-└── terraform
-    ├── provider.tf
-    ├── vpc.tf
-    ├── security_groups.tf
-    ├── ec2.tf
-    ├── data_sources.tf
-    └── outputs.tf
+├── terraform
+│   ├── data_sources.tf
+│   ├── ec2.tf
+│   ├── outputs.tf
+│   ├── provider.tf
+│   ├── security_groups.tf
+│   ├── vpc.tf
+│   └── terraform.tfstate / .backup
+└── README.md
 ```
 
-## How to Run
+---
 
-### Step 1: Create Custom AMI using Packer
+## Prerequisites
+- AWS CLI configured
+- Terraform installed
+- Ansible installed (on Ansible Controller EC2)
+- A valid AWS key pair (`bookshop-key.pem`)
 
-Navigate to the `packer` directory:
+---
 
+## Instructions
+
+###  Step 1: Build AMI with Packer
 ```bash
 cd packer
 packer init .
+packer validate amazon-linux.pkr.hcl
 packer build amazon-linux.pkr.hcl
 ```
 
-Note the resulting AMI ID from the output.
-
-### Step 2: Deploy Infrastructure using Terraform
-
-Navigate to the `terraform` directory:
-
+### Step 2: Provision Infrastructure with Terraform
 ```bash
-cd ../terraform
+cd terraform
 terraform init
-terraform validate
 terraform plan
 terraform apply
 ```
 
-Terraform will automatically select your most recent AMI created by Packer based on name filtering.
-
-## Expected Outputs
-
-Upon successful completion, Terraform outputs:
-
-- Public IP of the **Bastion Host**.
-- Private IP addresses of the **6 EC2 instances**.
-
-Example:
-
+###  Step 3: SSH to Ansible Controller
 ```bash
-bastion_public_ip = "35.93.228.149"
-
-private_instance_ips = [
-  "10.0.2.5",
-  "10.0.2.6",
-  "10.0.2.7",
-  "10.0.2.8",
-  "10.0.2.9",
-  "10.0.2.10",
-]
+ssh -i ~/.ssh/bookshop-key.pem ec2-user@<ansible_controller_public_ip>
 ```
 
-## Connecting to Instances
-
-### SSH into Bastion Host
-
+###  Step 4: Install Ansible on Controller
 ```bash
-ssh -i ~/.ssh/your-key.pem ec2-user@<bastion_public_ip>
+sudo yum update -y
+sudo yum install -y python3 pip
+pip3 install --user ansible
+export PATH=$PATH:~/.local/bin
+ansible --version
 ```
 
-### SSH into Private Instances via Bastion Host
-
-Use SSH Agent Forwarding:
-
+### 📁 Step 5: Upload Files to Ansible Controller
 ```bash
-ssh -A -i ~/.ssh/your-key.pem ec2-user@<bastion_public_ip>
+scp -i ~/.ssh/bookshop-key.pem /path/to/inventory.ini ec2-user@<controller-ip>:~/inventory.ini
+scp -i ~/.ssh/bookshop-key.pem /path/to/site.yml ec2-user@<controller-ip>:~/site.yml
+scp -i ~/.ssh/bookshop-key.pem ~/.ssh/bookshop-key.pem ec2-user@<controller-ip>:~/bookshop-key.pem
 ```
 
-Then from the Bastion Host:
-
+### 🛠 Step 6: Run Playbook
 ```bash
-ssh ec2-user@<private_instance_ip>
+ansible -i inventory.ini all -m ping
+ansible-playbook -i inventory.ini site.yml
 ```
+
+---
+
+## Expected Output
+
+### ✅ Docker Versions
+Ubuntu:
+```
+ok: [10.0.2.220] => {
+    "docker_version_output.stdout": "Docker version 26.1.3, build 26.1.3-0ubuntu1~20.04.1"
+}
+```
+Amazon Linux:
+```
+ok: [10.0.2.136] => {
+    "docker_version_output.stdout": "Docker version 25.0.8, build 0bab007"
+}
+```
+
+### ✅ Disk Usage Output
+```
+ok: [10.0.2.220] => {
+    "disk_usage_output.stdout": "Filesystem      Size  Used Avail Use% Mounted on\n/dev/root       7.6G  2.6G  5.0G  35% /\ndevtmpfs        469M     0  469M   0% /dev\ntmpfs           478M     0  478M   0% /dev/shm\ntmpfs            96M  908K   95M   1% /run\ntmpfs           5.0M     0  5.0M   0% /run/lock\ntmpfs           478M     0  478M   0% /sys/fs/cgroup\n/dev/loop0       27M   27M     0 100% /snap/amazon-ssm-agent/9881\n/dev/loop1       64M   64M     0 100% /snap/core20/2496\n/dev/loop2       45M   45M     0 100% /snap/snapd/23771\n/dev/loop3       92M   92M     0 100% /snap/lxd/32662\n/dev/loop4       74M   74M     0 100% /snap/core22/1748\n/dev/xvda15     105M  6.1M   99M   6% /boot/efi\ntmpfs            96M     0   96M   0% /run/user/1000"
+}
+```
+
+---
 
 ## Screenshots
 
-To demonstrate completion of the assignment, include the following screenshots:
+### instances
+![instances](./images/instances.png)
 
-1. Packer AMI creation success log.
-![Packer](images/packer_1.png)
-![Packer](images/packer_2.png)
-2. AWS Console showing the custom AMI.
-![aws console](images/ec2_instances.png)
-3. Terraform successful apply output.
-![Terraform apply](images/ips.png)
-4. AWS Console showing all EC2 instances (bastion and private instances).
-![aws console](images/ec2_instances.png)
-5. Successful SSH login to the Bastion Host.
-![ssh](images/connect_public.png)
-6. Successful SSH login to private instance from Bastion Host.
-![ssh](images/connect_private_from_bastion.png)
+### ips
+![ips](./images/ips.png)
 
+### ping test
+![ping](./images/ping.png)
 
+### res
+![res](./images/res.png)
+![res](./images/res2.png)
+![res](./images/res3.png)
+![res](./images/res4.png)
+---
 
+## Notes
+- Use `ec2-user` for Amazon Linux, `ubuntu` for Ubuntu in `inventory.ini`
+- Ensure SSH private key (`bookshop-key.pem`) has permission `chmod 400`
+- Ubuntu apt update need NAT gateway to visit Internet
+
+---
+
+## Clean Up
+```bash
+terraform destroy
+```
