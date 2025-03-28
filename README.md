@@ -89,14 +89,14 @@ export PATH=$PATH:~/.local/bin
 ansible --version
 ```
 
-### 📁 Step 5: Upload Files to Ansible Controller
+###  Step 5: Upload Files to Ansible Controller
 ```bash
 scp -i ~/.ssh/bookshop-key.pem /path/to/inventory.ini ec2-user@<controller-ip>:~/inventory.ini
 scp -i ~/.ssh/bookshop-key.pem /path/to/site.yml ec2-user@<controller-ip>:~/site.yml
 scp -i ~/.ssh/bookshop-key.pem ~/.ssh/bookshop-key.pem ec2-user@<controller-ip>:~/bookshop-key.pem
 ```
 
-### 🛠 Step 6: Run Playbook
+###  Step 6: Run Playbook
 ```bash
 ansible -i inventory.ini all -m ping
 ansible-playbook -i inventory.ini site.yml
@@ -106,7 +106,7 @@ ansible-playbook -i inventory.ini site.yml
 
 ## Expected Output
 
-### ✅ Docker Versions
+### Docker Versions
 Ubuntu:
 ```
 ok: [10.0.2.220] => {
@@ -120,7 +120,7 @@ ok: [10.0.2.136] => {
 }
 ```
 
-### ✅ Disk Usage Output
+### Disk Usage Output
 ```
 ok: [10.0.2.220] => {
     "disk_usage_output.stdout": "Filesystem      Size  Used Avail Use% Mounted on\n/dev/root       7.6G  2.6G  5.0G  35% /\ndevtmpfs        469M     0  469M   0% /dev\ntmpfs           478M     0  478M   0% /dev/shm\ntmpfs            96M  908K   95M   1% /run\ntmpfs           5.0M     0  5.0M   0% /run/lock\ntmpfs           478M     0  478M   0% /sys/fs/cgroup\n/dev/loop0       27M   27M     0 100% /snap/amazon-ssm-agent/9881\n/dev/loop1       64M   64M     0 100% /snap/core20/2496\n/dev/loop2       45M   45M     0 100% /snap/snapd/23771\n/dev/loop3       92M   92M     0 100% /snap/lxd/32662\n/dev/loop4       74M   74M     0 100% /snap/core22/1748\n/dev/xvda15     105M  6.1M   99M   6% /boot/efi\ntmpfs            96M     0   96M   0% /run/user/1000"
